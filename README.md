@@ -13,3 +13,7 @@
 ## Tips
 
 可以自己申请一个免费图灵机器人的账号玩。
+
+## License
+
+The MIT License
