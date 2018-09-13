@@ -1,0 +1,5 @@
+[turing]
+version = "0.0.1"
+name = "haruno-plugin-turing"
+groupNums = [123456, 123456]
+token = "123456789abcdef"
