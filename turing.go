@@ -3,7 +3,6 @@ package turing
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/url"
 	"strconv"
 	"strings"
@@ -68,7 +67,8 @@ func (_plugin Turing) Filters() map[string]coolq.Filter {
 		msg := new(coolq.Message)
 		err := coolq.Unmarshal([]byte(event.Message), msg)
 		if err != nil {
-			fmt.Println(err)
+			logger.Service.AddLog(logger.LogTypeError, err.Error())
+			return false
 		}
 		for _, section := range *msg {
 			if section.Type == "at" {
@@ -112,7 +112,6 @@ func (_plugin Turing) Handlers() map[string]coolq.Handler {
 			res, err := client.Get(qsURL)
 			if err != nil {
 				errMsg := err.Error()
-				fmt.Println(errMsg)
 				logger.Service.AddLog(logger.LogTypeError, errMsg)
 				return
 			}
@@ -121,7 +120,6 @@ func (_plugin Turing) Handlers() map[string]coolq.Handler {
 			err = json.NewDecoder(res.Body).Decode(ans)
 			if err != nil {
 				errMsg := err.Error()
-				fmt.Println(errMsg)
 				logger.Service.AddLog(logger.LogTypeError, errMsg)
 				return
 			}
@@ -135,7 +133,6 @@ func (_plugin Turing) Handlers() map[string]coolq.Handler {
 			replyMsg := string(coolq.Marshal(reply))
 			coolq.Client.SendGroupMsg(event.GroupID, replyMsg)
 			logMsg := fmt.Sprintf("向酷Q发送：%s", replyMsg)
-			log.Println(logMsg)
 			logger.Service.AddLog(logger.LogTypeSuccess, logMsg)
 		} else {
 			reply = coolq.AddSection(reply, unReply)
@@ -154,7 +151,6 @@ func (_plugin Turing) Load() error {
 // Loaded 加载完成
 func (_plugin Turing) Loaded() {
 	logMsg := fmt.Sprintf("%s已成功加载", _plugin.Name())
-	log.Println(logMsg)
 	logger.Service.AddLog(logger.LogTypeInfo, logMsg)
 }
 
