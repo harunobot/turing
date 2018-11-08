@@ -18,7 +18,7 @@ import (
 
 var groupNums = make(map[int64]bool)
 var token string
-var client = clients.NewHTTPClient("")
+var client = clients.NewHTTPClient()
 var name string
 var version string
 
