@@ -67,7 +67,7 @@ func (_plugin Turing) Filters() map[string]coolq.Filter {
 		msg := new(coolq.Message)
 		err := coolq.Unmarshal([]byte(event.Message), msg)
 		if err != nil {
-			logger.Service.AddLog(logger.LogTypeError, err.Error())
+			logger.Field(_plugin.Name()).Error(err.Error())
 			return false
 		}
 		for _, section := range *msg {
@@ -111,16 +111,14 @@ func (_plugin Turing) Handlers() map[string]coolq.Handler {
 			qsURL := fmt.Sprintf("http://www.tuling123.com/openapi/api?key=%s&info=%s&userid=%d", token, url.QueryEscape(question), event.UserID)
 			res, err := client.Get(qsURL)
 			if err != nil {
-				errMsg := err.Error()
-				logger.Service.AddLog(logger.LogTypeError, errMsg)
+				logger.Field(_plugin.Name()).Error(err.Error())
 				return
 			}
 			defer res.Body.Close()
 			ans := new(Answer)
 			err = json.NewDecoder(res.Body).Decode(ans)
 			if err != nil {
-				errMsg := err.Error()
-				logger.Service.AddLog(logger.LogTypeError, errMsg)
+				logger.Field(_plugin.Name()).Error(err.Error())
 				return
 			}
 			var text string
@@ -132,8 +130,7 @@ func (_plugin Turing) Handlers() map[string]coolq.Handler {
 			reply = coolq.AddSection(reply, coolq.NewTextSection(text))
 			replyMsg := string(coolq.Marshal(reply))
 			coolq.Client.SendGroupMsg(event.GroupID, replyMsg)
-			logMsg := fmt.Sprintf("向酷Q发送：%s", replyMsg)
-			logger.Service.AddLog(logger.LogTypeSuccess, logMsg)
+			logger.Field(_plugin.Name()).Successf("向酷Q发送 -> %s", replyMsg)
 		} else {
 			reply = coolq.AddSection(reply, unReply)
 			replyMsg := string(coolq.Marshal(reply))
@@ -150,8 +147,7 @@ func (_plugin Turing) Load() error {
 
 // Loaded 加载完成
 func (_plugin Turing) Loaded() {
-	logMsg := fmt.Sprintf("%s已成功加载", _plugin.Name())
-	logger.Service.AddLog(logger.LogTypeInfo, logMsg)
+	logger.Field(_plugin.Name()).Info("已成功加载")
 }
 
 // Instance 实体
