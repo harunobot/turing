@@ -16,44 +16,26 @@ import (
 	"github.com/haruno-bot/haruno/coolq"
 )
 
-var groupNums = make(map[int64]bool)
-var token string
-var client = clients.NewHTTPClient()
-var name string
-var version string
-
 // 没有问题的回答
 var unReply = coolq.NewTextSection("我听不清，你在说什么呀？")
 
 // Turing 结合图灵机器人api的插件
 type Turing struct {
 	coolq.Plugin
+	name      string
+	token     string
+	version   string
+	groupNums map[int64]bool
+	client    *clients.HTTPClient
 }
 
 // Name 插件名字+版本号
-func (_plugin Turing) Name() string {
-	return fmt.Sprintf("%s@%s", name, version)
-}
-
-func (_plugin *Turing) loadConfig() error {
-	cfg := new(Config)
-	toml.DecodeFile("cofig.toml", cfg)
-	_, err := toml.DecodeFile("config.toml", cfg)
-	if err != nil {
-		return err
-	}
-	pcfg := cfg.Turing
-	name = pcfg.Name
-	version = pcfg.Version
-	token = pcfg.Token
-	for _, groupID := range pcfg.GroupNums {
-		groupNums[groupID] = true
-	}
-	return nil
+func (_plugin *Turing) Name() string {
+	return fmt.Sprintf("%s@%s", _plugin.name, _plugin.version)
 }
 
 // Filters 过滤酷Q上报事件用，利于提升插件性能
-func (_plugin Turing) Filters() map[string]coolq.Filter {
+func (_plugin *Turing) Filters() map[string]coolq.Filter {
 	filters := make(map[string]coolq.Filter)
 	filters["turing"] = func(event *coolq.CQEvent) bool {
 		if event.PostType != "message" ||
@@ -61,7 +43,7 @@ func (_plugin Turing) Filters() map[string]coolq.Filter {
 			event.SubType != "normal" {
 			return false
 		}
-		if !groupNums[event.GroupID] {
+		if !_plugin.groupNums[event.GroupID] {
 			return false
 		}
 		msg := new(coolq.Message)
@@ -84,7 +66,7 @@ func (_plugin Turing) Filters() map[string]coolq.Filter {
 }
 
 // Handlers 处理酷Q上报事件用
-func (_plugin Turing) Handlers() map[string]coolq.Handler {
+func (_plugin *Turing) Handlers() map[string]coolq.Handler {
 	handlers := make(map[string]coolq.Handler)
 	handlers["turing"] = func(event *coolq.CQEvent) {
 		msg := new(coolq.Message)
@@ -108,8 +90,8 @@ func (_plugin Turing) Handlers() map[string]coolq.Handler {
 		reply = coolq.AddSection(reply, replto)
 
 		if len(question) > 0 {
-			qsURL := fmt.Sprintf("http://www.tuling123.com/openapi/api?key=%s&info=%s&userid=%d", token, url.QueryEscape(question), event.UserID)
-			res, err := client.Get(qsURL)
+			qsURL := fmt.Sprintf("http://www.tuling123.com/openapi/api?key=%s&info=%s&userid=%d", _plugin.token, url.QueryEscape(question), event.UserID)
+			res, err := _plugin.client.Get(qsURL)
 			if err != nil {
 				logger.Field(_plugin.Name()).Error(err.Error())
 				return
@@ -141,14 +123,29 @@ func (_plugin Turing) Handlers() map[string]coolq.Handler {
 }
 
 // Load 加载插件
-func (_plugin Turing) Load() error {
-	return _plugin.loadConfig()
+func (_plugin *Turing) Load() error {
+	cfg := new(Config)
+	toml.DecodeFile("cofig.toml", cfg)
+	_, err := toml.DecodeFile("config.toml", cfg)
+	if err != nil {
+		return err
+	}
+	pcfg := cfg.Turing
+	_plugin.name = pcfg.Name
+	_plugin.version = pcfg.Version
+	_plugin.token = pcfg.Token
+	_plugin.groupNums = make(map[int64]bool)
+	_plugin.client = clients.NewHTTPClient()
+	for _, groupID := range pcfg.GroupNums {
+		_plugin.groupNums[groupID] = true
+	}
+	return nil
 }
 
 // Loaded 加载完成
-func (_plugin Turing) Loaded() {
+func (_plugin *Turing) Loaded() {
 	logger.Field(_plugin.Name()).Info("已成功加载")
 }
 
 // Instance 实体
-var Instance = Turing{}
+var Instance = &Turing{}
